@@ -9,6 +9,7 @@ Created on Fri Aug  4 14:57:52 2023
 import os
 import sys
 import warnings
+from sklearn.exceptions import InconsistentVersionWarning
 
 import numpy as np
 import matplotlib.pyplot as plt
