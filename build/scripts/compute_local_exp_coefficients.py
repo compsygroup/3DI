@@ -72,7 +72,9 @@ if len(sys.argv) >= 6:
 sdir = f'models/MMs/{morphable_model}/'
 localized_basis_file = f'models/MMs/{morphable_model}/E/localized_basis/v.{basis_version}.npy'
 
-basis_set = np.load(localized_basis_file, allow_pickle=True).item()
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", InconsistentVersionWarning)
+    basis_set = np.load(localized_basis_file, allow_pickle=True).item()
 
 # @TODO the code does not work for differential expression computation
 # but only for absolute expressions. It needs to be adapted to the case where
