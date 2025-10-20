@@ -16,6 +16,49 @@ from common import rel_ids, create_expression_sequence
 
 from sklearn.exceptions import ConvergenceWarning
 
+def robust_normalize(X, stats):
+    eps = 1e-12
+    N, T = X.shape
+
+    def _vec(key):
+        if key not in stats:
+            raise ValueError(f"Required stat '{key}' is missing.")
+        v = np.asarray(stats[key], dtype=float)
+        if v.ndim != 1 or v.shape[0] != N:
+            raise ValueError(f"Stat '{key}' must be shape (N,), got {v.shape}.")
+        return v
+
+    # 'min_0.5pctl', 'max_99.5pctl', 'min_2.5pctl', 'max_97.5pctl', 'Q1', 'Q3', 'median', 'mean', 'std'
+    median = _vec("median")
+    q1 = _vec("Q1")
+    q3 = _vec("Q3")
+    std = _vec("std")
+
+    # Base robust scale: IQR -> sigma-like
+    NORMAL_CONST_IQR = 1.3489795003921634
+    base_scale = (q3 - q1)
+    scale = base_scale / NORMAL_CONST_IQR
+
+    # Identify invalid/too-small scales
+    invalid_or_small = (~np.isfinite(scale)) | (scale <= eps)
+
+    # Fallback to std if available, else 1.0
+    if std is not None:
+        std_safe = np.where(np.isfinite(std) & (std > eps), std, 1.0)
+        scale = np.where(invalid_or_small, std_safe, scale)
+    else:
+        scale = np.where(invalid_or_small, 1.0, scale)
+
+    # Final guard
+    scale = np.maximum(scale, eps)
+
+    # Normalize (broadcast across time axis)
+    X = np.asarray(X, dtype=float, order="C")
+    X_norm = (X - median[:, None]) / scale[:, None]
+    
+    return X_norm
+
+
 #warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
 exp_coeffs_file = sys.argv[1] 
@@ -63,16 +106,10 @@ for feat in facial_feats:
     dictionary = basis_set[feat]
     coeffs = dictionary.transform(dp).T
 
-    # normalize
-    # 'min_0.5pctl', 'max_99.5pctl', 'min_2.5pctl', 'max_97.5pctl', 'Q1', 'Q3', 'median', 'mean', 'std'
+    # robust normalization using (x - median) / IQR
     if normalize:
         if hasattr(dictionary, 'stats'):
-            stats = dictionary.stats
-            stats_mean = stats['mean'].reshape([-1,1])
-            stats_std = stats['std'].reshape([-1,1])
-                      
-            # normalize (0-mean, 1-std)
-            coeffs = (coeffs - stats_mean) / stats_std
+            coeffs = robust_normalize(coeffs, dictionary.stats)
         else:
             print("Skipping normalization because stats on localized expressions is not available.")
 
