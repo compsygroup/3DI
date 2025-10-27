@@ -1,4 +1,4 @@
-## Introduction for v0.2
+## Introduction for v0.3
 
 <p align="center">
 <img src="./docs/gifs/don.gif" width="320"/> <img src="./docs/gifs/dhilma.gif" width="320"/>
@@ -39,9 +39,9 @@ The following python packages are also needed, but these can be installed by fol
 ### 1) Compile CUDA code
 Download the code by running the commands below 
 ```
-wget https://github.com/Computational-Psychiatry/3DI/archive/refs/tags/v0.2.0.zip
-unzip v0.2.0.zip
-cd 3DI-0.2.0
+wget https://github.com/Computational-Psychiatry/3DI/archive/refs/tags/v0.3.1.zip
+unzip v0.3.1.zip
+cd 3DI-0.3.1
 ```
 and compile the CUDA code as below
 
